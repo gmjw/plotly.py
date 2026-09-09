@@ -14,12 +14,17 @@ from plotly.matplotlylib.mplexporter import Renderer
 from plotly.matplotlylib import mpltools
 
 
-# Warning format
-def warning_on_one_line(msg, category, filename, lineno, file=None, line=None):
-    return "%s:%s: %s:\n\n%s\n\n" % (filename, lineno, category.__name__, msg)
+def _export_color(color):
+    """Export a matplotlib color for use as a plotly color.
 
-
-warnings.formatwarning = warning_on_one_line
+    matplotlib uses "none" for fully transparent colors, which plotly does not
+    accept, so transparent colors are exported as transparent black.
+    Colors already exported by the mplexporter (hex or rgba strings) are
+    passed through unchanged.
+    """
+    if isinstance(color, str):
+        return "rgba(0,0,0,0)" if color == "none" else color
+    return [_export_color(c) for c in color]
 
 
 class PlotlyRenderer(Renderer):
@@ -60,6 +65,17 @@ class PlotlyRenderer(Renderer):
         self.mpl_x_bounds = (0, 1)
         self.mpl_y_bounds = (0, 1)
         self.msg = "Initialized PlotlyRenderer\n"
+        self._processing_legend = False
+        self._legend_visible = False
+
+    def _convert_x_dates(self, x):
+        """Convert x values to date strings when the x-axis is a date axis."""
+        if self.x_is_mpl_date:
+            formatter = (
+                self.current_mpl_ax.get_xaxis().get_major_formatter().__class__.__name__
+            )
+            x = mpltools.mpl_dates_to_datestrings(x, formatter)
+        return x
 
     def open_figure(self, fig, props):
         """Creates a new figure by beginning to fill out layout dict.
@@ -85,6 +101,7 @@ class PlotlyRenderer(Renderer):
             autosize=False,
             hovermode="closest",
         )
+        self.plotly_fig["layout"].paper_bgcolor = _export_color(props["figbg"])
         self.mpl_x_bounds, self.mpl_y_bounds = mpltools.get_axes_bounds(fig)
         margin = go.layout.Margin(
             l=int(self.mpl_x_bounds[0] * self.plotly_fig["layout"]["width"]),
@@ -108,7 +125,6 @@ class PlotlyRenderer(Renderer):
         fig -- a matplotlib.figure.Figure object.
 
         """
-        self.plotly_fig["layout"]["showlegend"] = False
         self.msg += "Closing figure\n"
 
     def open_axes(self, ax, props):
@@ -151,6 +167,8 @@ class PlotlyRenderer(Renderer):
         ]
         self.current_bars = []
         self.axis_ct += 1
+        # update plot background with the axes background from mpl
+        self.plotly_fig["layout"].plot_bgcolor = _export_color(props["axesbg"])
         # set defaults in axes
         xaxis = go.layout.XAxis(
             anchor="y{0}".format(self.axis_ct), zeroline=False, ticks="inside"
@@ -197,6 +215,37 @@ class PlotlyRenderer(Renderer):
         self.draw_bars(self.current_bars)
         self.msg += "  Closing axes\n"
         self.x_is_mpl_date = False
+
+    def open_legend(self, legend, props):
+        """Enable Plotly's native legend when matplotlib legend is detected.
+
+        This method is called when a matplotlib legend is found. It enables
+        Plotly's showlegend only if the matplotlib legend is visible.
+
+        Positional arguments:
+        legend -- matplotlib.legend.Legend object
+        props -- legend properties dictionary
+        """
+        self.msg += "  Opening legend\n"
+        self._processing_legend = True
+        self._legend_visible = props.get("visible", True)
+        if self._legend_visible:
+            self.msg += (
+                "    Enabling native plotly legend (matplotlib legend is visible)\n"
+            )
+            self.plotly_fig["layout"]["showlegend"] = True
+        else:
+            self.msg += "    Not enabling legend (matplotlib legend is not visible)\n"
+
+    def close_legend(self, legend):
+        """Finalize legend processing.
+
+        Positional arguments:
+        legend -- matplotlib.legend.Legend object
+        """
+        self.msg += "  Closing legend\n"
+        self._processing_legend = False
+        self._legend_visible = False
 
     def draw_bars(self, bars):
         # sort bars according to bar containers
@@ -262,13 +311,7 @@ class PlotlyRenderer(Renderer):
                 [bar["x0"] for bar in trace], [bar["x1"] for bar in trace]
             )
             if self.x_is_mpl_date:
-                x = [bar["x0"] for bar in trace]
-                formatter = (
-                    self.current_mpl_ax.get_xaxis()
-                    .get_major_formatter()
-                    .__class__.__name__
-                )
-                x = mpltools.mpl_dates_to_datestrings(x, formatter)
+                x = self._convert_x_dates([bar["x0"] for bar in trace])
         else:
             self.msg += "    Attempting to draw a horizontal bar chart\n"
             old_rights = [bar_props["x1"] for bar_props in trace]
@@ -299,7 +342,7 @@ class PlotlyRenderer(Renderer):
         )  # TODO ditto
         if len(bar["x"]) > 1:
             self.msg += "    Heck yeah, I drew that bar chart\n"
-            (self.plotly_fig.add_trace(bar),)
+            self.plotly_fig.add_trace(bar)
             if bar_gap is not None:
                 self.plotly_fig["layout"]["bargap"] = bar_gap
         else:
@@ -308,83 +351,6 @@ class PlotlyRenderer(Renderer):
                 "found box chart data with length <= 1, "
                 "assuming data redundancy, not plotting."
             )
-
-    def draw_legend_shapes(self, mode, shape, **props):
-        """Create a shape that matches lines or markers in legends.
-
-        Main issue is that path for circles do not render, so we have to use 'circle'
-        instead of 'path'.
-        """
-        for single_mode in mode.split("+"):
-            x = props["data"][0][0]
-            y = props["data"][0][1]
-            if single_mode == "markers" and props.get("markerstyle"):
-                size = shape.pop("size", 6)
-                symbol = shape.pop("symbol")
-                # aligning to "center"
-                x0 = 0
-                y0 = 0
-                x1 = size
-                y1 = size
-                markerpath = props["markerstyle"].get("markerpath")
-                if markerpath is None and symbol != "circle":
-                    self.msg += (
-                        "not sure how to handle this marker without a valid path\n"
-                    )
-                    return
-                # marker path to SVG path conversion
-                path = " ".join(
-                    [f"{a} {t[0]},{t[1]}" for a, t in zip(markerpath[1], markerpath[0])]
-                )
-
-                if symbol == "circle":
-                    # symbols like . and o in matplotlib, use circle
-                    # plotly also maps many other markers to circle, such as 1,8 and p
-                    path = None
-                    shape_type = "circle"
-                    x0 = -size / 2
-                    y0 = size / 2
-                    x1 = size / 2
-                    y1 = size + size / 2
-                else:
-                    # triangles, star etc
-                    shape_type = "path"
-                legend_shape = go.layout.Shape(
-                    type=shape_type,
-                    xref="paper",
-                    yref="paper",
-                    x0=x0,
-                    y0=y0,
-                    x1=x1,
-                    y1=y1,
-                    xsizemode="pixel",
-                    ysizemode="pixel",
-                    xanchor=x,
-                    yanchor=y,
-                    path=path,
-                    **shape,
-                )
-
-            elif single_mode == "lines":
-                mode = "line"
-                x1 = props["data"][1][0]
-                y1 = props["data"][1][1]
-
-                legend_shape = go.layout.Shape(
-                    type=mode,
-                    xref="paper",
-                    yref="paper",
-                    x0=x,
-                    y0=y + 0.02,
-                    x1=x1,
-                    y1=y1 + 0.02,
-                    **shape,
-                )
-            else:
-                self.msg += "not sure how to handle this element\n"
-                return
-            self.plotly_fig.add_shape(legend_shape)
-            self.msg += "    Heck yeah, I drew that shape\n"
 
     def draw_marked_line(self, **props):
         """Create a data dict for a line obj.
@@ -489,19 +455,12 @@ class PlotlyRenderer(Renderer):
                 marker=marker,
             )
             if self.x_is_mpl_date:
-                formatter = (
-                    self.current_mpl_ax.get_xaxis()
-                    .get_major_formatter()
-                    .__class__.__name__
-                )
-                marked_line["x"] = mpltools.mpl_dates_to_datestrings(
-                    marked_line["x"], formatter
-                )
-            (self.plotly_fig.add_trace(marked_line),)
+                marked_line["x"] = self._convert_x_dates(marked_line["x"])
+            self.plotly_fig.add_trace(marked_line)
             self.msg += "    Heck yeah, I drew that line\n"
         elif props["coordinates"] == "axes":
             # dealing with legend graphical elements
-            self.draw_legend_shapes(mode=mode, shape=shape, **props)
+            self.msg += "    Using native legend\n"
         else:
             self.msg += "    Line didn't have 'data' coordinates, not drawing\n"
             warnings.warn(
@@ -566,6 +525,9 @@ class PlotlyRenderer(Renderer):
             }
             self.msg += "    Drawing path collection as markers\n"
             self.draw_marked_line(**scatter_props)
+        elif props["path_coordinates"] == "data":
+            self.msg += "    Drawing path collection as filled polygons\n"
+            self._draw_filled_path_collection(props)
         else:
             self.msg += "    Path collection not linked to 'data', not drawing\n"
             warnings.warn(
@@ -573,6 +535,42 @@ class PlotlyRenderer(Renderer):
                 "world. I totally don't know what to do with "
                 "it yet! Plotly can only import path "
                 "collections linked to 'data' coordinates"
+            )
+
+    def _draw_filled_path_collection(self, props):
+        """Draw a path collection (e.g. violin plot bodies) as filled polygons."""
+        facecolors = mpltools.convert_rgba_array(props["styles"]["facecolor"])
+        edgecolors = mpltools.convert_rgba_array(props["styles"]["edgecolor"])
+        linewidths = mpltools.convert_linewidth_array(props["styles"]["linewidth"])
+
+        def per_path(colors, i, default):
+            if isinstance(colors, str):
+                return colors
+            if colors is None:
+                return default
+            try:
+                n = len(colors)
+            except TypeError:
+                return colors
+            return colors[i % n] if n else default
+
+        for i, (verts, codes) in enumerate(props["paths"]):
+            facecolor = per_path(facecolors, i, "rgba(0,0,0,0)")
+            edgecolor = per_path(edgecolors, i, "rgba(0,0,0,0)")
+            linewidth = per_path(linewidths, i, 0)
+            self.plotly_fig.add_trace(
+                go.Scatter(
+                    x=self._convert_x_dates([v[0] for v in verts]),
+                    y=[v[1] for v in verts],
+                    mode="lines",
+                    line=go.scatter.Line(
+                        color=_export_color(edgecolor), width=linewidth
+                    ),
+                    fill="toself",
+                    fillcolor=_export_color(facecolor),
+                    xaxis="x{0}".format(self.axis_ct),
+                    yaxis="y{0}".format(self.axis_ct),
+                )
             )
 
     def draw_path(self, **props):
@@ -583,7 +581,7 @@ class PlotlyRenderer(Renderer):
         place in functions from mpltools.py.
 
         props.keys() -- [
-        'data',         (a list of verticies for the path)
+        'data',         (a list of vertices for the path)
         'coordinates',  ('data', 'axes', 'figure', or 'display')
         'pathcodes',    (code for the path, structure: ['M', 'L', 'Z', etc.])
         'style',        (style dict, see below)
@@ -667,6 +665,16 @@ class PlotlyRenderer(Renderer):
             self.draw_title(**props)
         else:  # just a regular text annotation...
             self.msg += "      Text object is a normal annotation\n"
+            # Skip creating annotations for legend text when using native legend
+            if (
+                self._processing_legend
+                and self._legend_visible
+                and props["coordinates"] == "axes"
+            ):
+                self.msg += (
+                    "        Skipping legend text annotation (using native legend)\n"
+                )
+                return
             if props["coordinates"] != "data":
                 self.msg += "        Text object isn't linked to 'data' coordinates\n"
                 x_px, y_px = (

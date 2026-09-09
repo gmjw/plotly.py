@@ -16,6 +16,7 @@ class Legend(_BaseLayoutHierarchyType):
         "entrywidthmode",
         "font",
         "groupclick",
+        "groupdoubleclick",
         "grouptitlefont",
         "indentation",
         "itemclick",
@@ -25,6 +26,8 @@ class Legend(_BaseLayoutHierarchyType):
         "maxheight",
         "orientation",
         "title",
+        "titleclick",
+        "titledoubleclick",
         "tracegroupgap",
         "traceorder",
         "uirevision",
@@ -44,12 +47,18 @@ class Legend(_BaseLayoutHierarchyType):
         Sets the legend background color. Defaults to
         `layout.paper_bgcolor`.
 
-        The 'bgcolor' property is a color and may be specified as:
-          - A hex string (e.g. '#ff0000')
-          - An rgb/rgba string (e.g. 'rgb(255,0,0)')
-          - An hsl/hsla string (e.g. 'hsl(0,100%,50%)')
-          - An hsv/hsva string (e.g. 'hsv(0,100%,100%)')
-          - A named CSS color: see https://plotly.com/python/css-colors/ for a list
+        The 'bgcolor' property is a color and may be specified as a string in the following formats:
+          - hex or short hex (e.g. '#d3d3d3', '#d3d')
+          - hex or short hex with alpha (e.g. '#d3d3d380', '#d3d8')
+          - rgb (e.g. 'rgb(255, 0, 0)', 'rgb(255 0 0)')
+          - rgba (e.g. 'rgba(255, 0, 0, 0.5)', 'rgba(255 0 0 / 0.5)')
+          - hsl (e.g. 'hsl(0, 100%, 50%)', 'hsl(0deg 100% 50%)')
+          - hsla (e.g. 'hsla(0, 100%, 50%, 0.5)', 'hsla(0deg 100% 50% / 0.5)')
+          - hwb (e.g. 'hwb(0 0% 100%)')
+          - lab/lch/oklab/oklch (e.g. 'oklch(0.7 0.15 180)')
+          - color (e.g. 'color(display-p3 1 0 0)')
+          - named colors (full list: https://www.w3.org/TR/css-color-4/#named-color)
+          - Any other supported CSS 4 color format: https://www.w3.org/TR/css-color-4/
 
         Returns
         -------
@@ -66,12 +75,18 @@ class Legend(_BaseLayoutHierarchyType):
         """
         Sets the color of the border enclosing the legend.
 
-        The 'bordercolor' property is a color and may be specified as:
-          - A hex string (e.g. '#ff0000')
-          - An rgb/rgba string (e.g. 'rgb(255,0,0)')
-          - An hsl/hsla string (e.g. 'hsl(0,100%,50%)')
-          - An hsv/hsva string (e.g. 'hsv(0,100%,100%)')
-          - A named CSS color: see https://plotly.com/python/css-colors/ for a list
+        The 'bordercolor' property is a color and may be specified as a string in the following formats:
+          - hex or short hex (e.g. '#d3d3d3', '#d3d')
+          - hex or short hex with alpha (e.g. '#d3d3d380', '#d3d8')
+          - rgb (e.g. 'rgb(255, 0, 0)', 'rgb(255 0 0)')
+          - rgba (e.g. 'rgba(255, 0, 0, 0.5)', 'rgba(255 0 0 / 0.5)')
+          - hsl (e.g. 'hsl(0, 100%, 50%)', 'hsl(0deg 100% 50%)')
+          - hsla (e.g. 'hsla(0, 100%, 50%, 0.5)', 'hsla(0deg 100% 50% / 0.5)')
+          - hwb (e.g. 'hwb(0 0% 100%)')
+          - lab/lch/oklab/oklch (e.g. 'oklch(0.7 0.15 180)')
+          - color (e.g. 'color(display-p3 1 0 0)')
+          - named colors (full list: https://www.w3.org/TR/css-color-4/#named-color)
+          - Any other supported CSS 4 color format: https://www.w3.org/TR/css-color-4/
 
         Returns
         -------
@@ -183,6 +198,29 @@ class Legend(_BaseLayoutHierarchyType):
     @groupclick.setter
     def groupclick(self, val):
         self["groupclick"] = val
+
+    @property
+    def groupdoubleclick(self):
+        """
+        Determines the behavior on legend group item double-click.
+        "toggleitem" toggles the visibility of the individual item
+        clicked on the graph. "togglegroup" toggles the visibility of
+        all items in the same legendgroup as the item clicked on the
+        graph. Defaults to the value of `groupclick`.
+
+        The 'groupdoubleclick' property is an enumeration that may be specified as:
+          - One of the following enumeration values:
+                ['toggleitem', 'togglegroup']
+
+        Returns
+        -------
+        Any
+        """
+        return self["groupdoubleclick"]
+
+    @groupdoubleclick.setter
+    def groupdoubleclick(self, val):
+        self["groupdoubleclick"] = val
 
     @property
     def grouptitlefont(self):
@@ -374,6 +412,55 @@ class Legend(_BaseLayoutHierarchyType):
         self["title"] = val
 
     @property
+    def titleclick(self):
+        """
+        Determines the behavior on legend title click. "toggle" toggles
+        the visibility of all items in the legend. "toggleothers"
+        toggles the visibility of all other legends. False disables
+        legend title click interactions. Defaults to "toggle" when
+        there are multiple legends, False otherwise. Not supported for
+        legends containing pie and pie-like traces.
+
+        The 'titleclick' property is an enumeration that may be specified as:
+          - One of the following enumeration values:
+                ['toggle', 'toggleothers', False]
+
+        Returns
+        -------
+        Any
+        """
+        return self["titleclick"]
+
+    @titleclick.setter
+    def titleclick(self, val):
+        self["titleclick"] = val
+
+    @property
+    def titledoubleclick(self):
+        """
+        Determines the behavior on legend title double-click. "toggle"
+        toggles the visibility of all items in the legend.
+        "toggleothers" toggles the visibility of all other legends.
+        False disables legend title double-click interactions. Defaults
+        to "toggleothers" when there are multiple legends, False
+        otherwise. Not supported for legends containing pie and pie-
+        like traces.
+
+        The 'titledoubleclick' property is an enumeration that may be specified as:
+          - One of the following enumeration values:
+                ['toggle', 'toggleothers', False]
+
+        Returns
+        -------
+        Any
+        """
+        return self["titledoubleclick"]
+
+    @titledoubleclick.setter
+    def titledoubleclick(self, val):
+        self["titledoubleclick"] = val
+
+    @property
     def tracegroupgap(self):
         """
         Sets the amount of vertical space (in px) between legend
@@ -462,8 +549,8 @@ class Legend(_BaseLayoutHierarchyType):
         """
         Determines whether or not this legend is visible.
 
-        The 'visible' property must be specified as a bool
-        (either True, or False)
+        The 'visible' property is a boolean and must be specified as:
+          - A boolean value: True or False
 
         Returns
         -------
@@ -639,6 +726,13 @@ class Legend(_BaseLayoutHierarchyType):
             item clicked on the graph. "togglegroup" toggles the
             visibility of all items in the same legendgroup as the
             item clicked on the graph.
+        groupdoubleclick
+            Determines the behavior on legend group item double-
+            click. "toggleitem" toggles the visibility of the
+            individual item clicked on the graph. "togglegroup"
+            toggles the visibility of all items in the same
+            legendgroup as the item clicked on the graph. Defaults
+            to the value of `groupclick`.
         grouptitlefont
             Sets the font for group titles in legend. Defaults to
             `legend.font` with its size increased about 10%.
@@ -680,6 +774,22 @@ class Legend(_BaseLayoutHierarchyType):
         title
             :class:`plotly.graph_objects.layout.legend.Title`
             instance or dict with compatible properties
+        titleclick
+            Determines the behavior on legend title click. "toggle"
+            toggles the visibility of all items in the legend.
+            "toggleothers" toggles the visibility of all other
+            legends. False disables legend title click
+            interactions. Defaults to "toggle" when there are
+            multiple legends, False otherwise. Not supported for
+            legends containing pie and pie-like traces.
+        titledoubleclick
+            Determines the behavior on legend title double-click.
+            "toggle" toggles the visibility of all items in the
+            legend. "toggleothers" toggles the visibility of all
+            other legends. False disables legend title double-click
+            interactions. Defaults to "toggleothers" when there are
+            multiple legends, False otherwise. Not supported for
+            legends containing pie and pie-like traces.
         tracegroupgap
             Sets the amount of vertical space (in px) between
             legend groups.
@@ -756,6 +866,7 @@ class Legend(_BaseLayoutHierarchyType):
         entrywidthmode=None,
         font=None,
         groupclick=None,
+        groupdoubleclick=None,
         grouptitlefont=None,
         indentation=None,
         itemclick=None,
@@ -765,6 +876,8 @@ class Legend(_BaseLayoutHierarchyType):
         maxheight=None,
         orientation=None,
         title=None,
+        titleclick=None,
+        titledoubleclick=None,
         tracegroupgap=None,
         traceorder=None,
         uirevision=None,
@@ -808,6 +921,13 @@ class Legend(_BaseLayoutHierarchyType):
             item clicked on the graph. "togglegroup" toggles the
             visibility of all items in the same legendgroup as the
             item clicked on the graph.
+        groupdoubleclick
+            Determines the behavior on legend group item double-
+            click. "toggleitem" toggles the visibility of the
+            individual item clicked on the graph. "togglegroup"
+            toggles the visibility of all items in the same
+            legendgroup as the item clicked on the graph. Defaults
+            to the value of `groupclick`.
         grouptitlefont
             Sets the font for group titles in legend. Defaults to
             `legend.font` with its size increased about 10%.
@@ -849,6 +969,22 @@ class Legend(_BaseLayoutHierarchyType):
         title
             :class:`plotly.graph_objects.layout.legend.Title`
             instance or dict with compatible properties
+        titleclick
+            Determines the behavior on legend title click. "toggle"
+            toggles the visibility of all items in the legend.
+            "toggleothers" toggles the visibility of all other
+            legends. False disables legend title click
+            interactions. Defaults to "toggle" when there are
+            multiple legends, False otherwise. Not supported for
+            legends containing pie and pie-like traces.
+        titledoubleclick
+            Determines the behavior on legend title double-click.
+            "toggle" toggles the visibility of all items in the
+            legend. "toggleothers" toggles the visibility of all
+            other legends. False disables legend title double-click
+            interactions. Defaults to "toggleothers" when there are
+            multiple legends, False otherwise. Not supported for
+            legends containing pie and pie-like traces.
         tracegroupgap
             Sets the amount of vertical space (in px) between
             legend groups.
@@ -945,6 +1081,7 @@ an instance of :class:`plotly.graph_objs.layout.Legend`""")
         self._set_property("entrywidthmode", arg, entrywidthmode)
         self._set_property("font", arg, font)
         self._set_property("groupclick", arg, groupclick)
+        self._set_property("groupdoubleclick", arg, groupdoubleclick)
         self._set_property("grouptitlefont", arg, grouptitlefont)
         self._set_property("indentation", arg, indentation)
         self._set_property("itemclick", arg, itemclick)
@@ -954,6 +1091,8 @@ an instance of :class:`plotly.graph_objs.layout.Legend`""")
         self._set_property("maxheight", arg, maxheight)
         self._set_property("orientation", arg, orientation)
         self._set_property("title", arg, title)
+        self._set_property("titleclick", arg, titleclick)
+        self._set_property("titledoubleclick", arg, titledoubleclick)
         self._set_property("tracegroupgap", arg, tracegroupgap)
         self._set_property("traceorder", arg, traceorder)
         self._set_property("uirevision", arg, uirevision)
