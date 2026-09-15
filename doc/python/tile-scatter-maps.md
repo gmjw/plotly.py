@@ -6,7 +6,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.16.3
+      jupytext_version: 1.16.4
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -20,7 +20,7 @@ jupyter:
     name: python
     nbconvert_exporter: python
     pygments_lexer: ipython3
-    version: 3.10.0
+    version: 3.9.16
   plotly:
     description: How to make scatter plots on tile maps in Python.
     display_as: maps
@@ -220,6 +220,34 @@ fig.update_layout(
 fig.show()
 ```
 
+#### Supported Symbols
+
+Plotly uses [Maki v2.1.0](https://app.unpkg.com/maki@2.1.0/files/icons) for symbols and supports the following values for `symbol`:
+
+"aerialway", "airfield", "airport", "alcohol-shop", "america-football", 
+"amusement-park", "aquarium", "art-gallery", "attraction", "bakery",
+"bank", "bar", "baseball", "basketball", "beer", "bicycle", "bicycle-share",
+"blood-bank", "buddhism", "building", "bus", "cafe", "campsite", "car",
+"castle", "cemetery", "central-building", "cinema", "circle", "circle-stroked",
+"clothing-store", "college", "commercial", "cricket", "cross", "dam",
+"danger", "dentist", "doctor", "dog-park", "drinking-water", "embassy",
+"entrance", "farm", "fast-food", "ferry", "fire-station", "fuel", "gaming",
+"garden", "garden-center", "gift", "golf", "grocery", "hairdresser",
+"harbor", "heart", "heliport", "hospital", "ice-cream", "industry",
+"information", "karaoke", "landmark", "laundry", "library", "lighthouse",
+"lodging", "marker", "monument", "mountain", "museum", "music", "park",
+"parking", "parking-garage", "pharmacy", "picnic-site", "pitch",
+"place-of-worship", "playground", "police", "post", "prison", "rail",
+"rail-light", "rail-metro", "ranger-station", "religious-christian",
+"religious-jewish", "religious-muslim", "residential-community",
+"restaurant", "roadblock", "rocket", "school", "shelter", "shop",
+"skiing", "soccer", "square", "square-stroked", "stadium", "star",
+"star-stroked", "suitcase", "sushi", "swimming", "teahouse", "telephone",
+"tennis", "theatre", "toilet", "town-hall", "triangle", "triangle-stroked",
+"veterinary", "volcano", "warehouse", "waste-basket", "water", "wetland",
+"wheelchair", "zoo"
+
+
 #### Add Clusters
 
 *New in 5.11*
@@ -292,62 +320,7 @@ fig.update_layout(
 fig.show()
 ```
 
-## Mapbox Maps
-
-> Mapbox traces are deprecated and may be removed in a future version of Plotly.py.
-
-The earlier examples using `px.scatter_map` and `go.Scattermap` use [Maplibre](https://maplibre.org/maplibre-gl-js/docs/) for rendering. These traces were introduced in Plotly.py 5.24 and are now the recommended way to create scatter plots on tile-based maps. There are also traces that use [Mapbox](https://docs.mapbox.com): `px.scatter_mapbox` and `go.Scattermapbox`
-
-To plot on Mapbox maps with Plotly you _may_ need a Mapbox account and a public [Mapbox Access Token](https://www.mapbox.com/studio). See our [Mapbox Map Layers](/python/mapbox-layers/) documentation for more information.
-
-Here's the first example rewritten to use `px.scatter_mapbox`.
-
-```python
-import plotly.express as px
-px.set_mapbox_access_token(open(".mapbox_token").read())
-df = px.data.carshare()
-fig = px.scatter_mapbox(df, lat="centroid_lat", lon="centroid_lon",     color="peak_hour", size="car_hours",
-                  color_continuous_scale=px.colors.cyclical.IceFire, size_max=15, zoom=10)
-fig.show()
-
-```
-
-And here's an example using Graph Objects:
-
-```python
-import plotly.graph_objects as go
-
-mapbox_access_token = open(".mapbox_token").read()
-
-fig = go.Figure(go.Scattermapbox(
-        lat=['45.5017'],
-        lon=['-73.5673'],
-        mode='markers',
-        marker=go.scattermapbox.Marker(
-            size=14
-        ),
-        text=['Montreal'],
-    ))
-
-fig.update_layout(
-    hovermode='closest',
-    mapbox=dict(
-        accesstoken=mapbox_access_token,
-        bearing=0,
-        center=go.layout.mapbox.Center(
-            lat=45,
-            lon=-73
-        ),
-        pitch=0,
-        zoom=5
-    )
-)
-
-fig.show()
-```
 
 #### Reference
 
 See [function reference for `px.scatter_map`](https://plotly.com/python-api-reference/generated/plotly.express.scatter_map) or https://plotly.com/python/reference/scattermap/ for more information about the attributes available.
-
-For Mapbox-based tile maps, see [function reference for `px.scatter_mapbox`](https://plotly.com/python-api-reference/generated/plotly.express.scatter_mapbox) or https://plotly.com/python/reference/scattermapbox/.

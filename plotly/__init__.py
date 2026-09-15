@@ -57,7 +57,7 @@ if TYPE_CHECKING:
         "__version__",
     ]
 
-    # Set default template (for >= 3.7 this is done in ploty/io/__init__.py)
+    # Set default template (for >= 3.7 this is done in plotly/io/__init__.py)
     from plotly.io import templates
 
     templates._default = "plotly"
@@ -180,6 +180,20 @@ def hist_series(data_frame, **kwargs):
     skip += ["figsize", "bins", "legend"]
     new_kwargs = {k: kwargs[k] for k in kwargs if k not in skip}
     return histogram(data_frame, **new_kwargs)
+
+
+def _get_sg_image_scraper():
+    """Called by sphinx-gallery when ``"plotly"`` is listed in ``image_scrapers``.
+
+    See https://sphinx-gallery.github.io/stable/advanced.html#integrate-custom-scrapers-with-sphinx-gallery
+    """
+    import plotly.io as pio
+    from plotly.io._sg_scraper import plotly_sg_scraper
+
+    # Not left to the import side effect: sphinx-gallery resolves the scraper
+    # repeatedly, so this also undoes any later renderer change.
+    pio.renderers.default = "sphinx_gallery_png"
+    return plotly_sg_scraper
 
 
 def _jupyter_labextension_paths():

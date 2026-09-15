@@ -76,6 +76,7 @@ end up with a colormap that is massive and may slow down graphing performance.
 
 import decimal
 from numbers import Number
+from warnings import warn
 
 from _plotly_utils import exceptions
 
@@ -419,10 +420,10 @@ def convert_colors_to_same_type(
 
     Takes a single color or an iterable of colors, as well as a list of scale
     values, and outputs a 2-pair of the list of color(s) converted all to an
-    rgb or tuple color type, aswell as the scale as the second element. If
+    rgb or tuple color type, as well as the scale as the second element. If
     colors is a Plotly Scale name, then 'scale' will be forced to the scale
     from the respective colorscale and the colors in that colorscale will also
-    be coverted to the selected colortype. If colors is None, then there is an
+    be converted to the selected colortype. If colors is None, then there is an
     option to return portion of the DEFAULT_PLOTLY_COLORS
 
     :param (str|tuple|list) colors: either a plotly scale name, an rgb or hex
@@ -567,8 +568,8 @@ def make_colorscale(colors, scale=None):
 
     Takes a list of colors and scales and constructs a colorscale based
     on the colors in sequential order. If 'scale' is left empty, a linear-
-    interpolated colorscale will be generated. If 'scale' is a specificed
-    list, it must be the same legnth as colors and must contain all floats
+    interpolated colorscale will be generated. If 'scale' is a specified
+    list, it must be the same length as colors and must contain all floats
     For documentation regarding to the form of the output, see
     https://plot.ly/python/reference/#mesh3d-colorscale
 
@@ -752,17 +753,40 @@ def hex_to_rgb(value):
     """
     Calculates rgb values from a hex color code.
 
-    :param (string) value: Hex color string
+    :param (string) value: Hex color string. May be a full 6-character code
+        or a 3-character shorthand code.
 
     :rtype (tuple) (r_value, g_value, b_value): tuple of rgb values
+
+    Example:
+
+        '#FFFFFF' --> (255, 255, 255)
+        '#FFF'    --> (255, 255, 255)
+
     """
+
+    input_value = value
     value = value.lstrip("#")
-    hex_total_length = len(value)
-    rgb_section_length = hex_total_length // 3
-    return tuple(
-        int(value[i : i + rgb_section_length], 16)
-        for i in range(0, hex_total_length, rgb_section_length)
-    )
+    if len(value) == 3:
+        value = "".join(c * 2 for c in value)
+    elif len(value) == 4:
+        warn(
+            "4-character hex color provided; 4th character will be ignored."
+            "got {!r}".format(input_value)
+        )
+        value = "".join(c * 2 for c in value)[:6]
+    elif len(value) == 8:
+        warn(
+            "8-character hex color provided; last two characters will be ignored."
+            "got {!r}".format(input_value)
+        )
+        value = value[:6]
+    elif len(value) != 6:
+        raise ValueError(
+            "hex color must be 3 or 6 hex digits, optionally prefixed with "
+            "'#'; got {!r}".format(input_value)
+        )
+    return tuple(int(value[i : i + 2], 16) for i in range(0, 6, 2))
 
 
 def colorscale_to_colors(colorscale):
